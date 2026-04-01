@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -33,11 +32,22 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-grad
 .empty-state{text-align:center;padding:30px 20px;color:var(--text-muted)}.empty-state p{font-size:13px;line-height:1.6}.divider{height:1px;background:var(--border-light);margin:18px 0}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:600;box-shadow:var(--shadow-lg);animation:toastIn .3s ease}@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.cal-hdr{padding:8px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.cal-day{min-height:80px;padding:6px;border:1px solid var(--border-light);border-radius:var(--radius-sm);background:var(--card);cursor:pointer;transition:all .15s;position:relative}
+.cal-day:hover{border-color:var(--primary);box-shadow:var(--shadow-sm)}
+.cal-day.today{border-color:var(--primary);background:var(--primary-soft)}
+.cal-day.other-month{opacity:.35;background:transparent}
+.cal-day.selected{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-light)}
+.cal-num{font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px}
+.cal-day.today .cal-num{color:var(--primary);font-weight:700}
+.cal-mtg{font-size:8px;font-weight:600;padding:2px 5px;border-radius:4px;background:var(--purple-light);color:var(--purple);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cal-task-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--primary);margin-right:2px}
+.cal-dots{position:absolute;bottom:4px;right:6px;display:flex;gap:2px}
 </style>
 </head>
 <body>
 <div class="header"><div class="header-top"><div class="header-brand"><h1>Project Planner</h1><span class="header-tag">Monsoon Accessorize</span></div><div class="header-date" id="hd"></div></div>
-<div class="tab-bar"><button class="tab-btn active" data-tab="today">Today</button><button class="tab-btn" data-tab="tasks">Tasks</button><button class="tab-btn" data-tab="meetings">Meetings</button><button class="tab-btn" data-tab="compose">Compose</button><button class="tab-btn" data-tab="decisions">Decisions</button><button class="tab-btn" data-tab="braindump">Brain Dump</button><button class="tab-btn" data-tab="settings">Settings</button></div></div>
+<div class="tab-bar"><button class="tab-btn active" data-tab="today">Today</button><button class="tab-btn" data-tab="tasks">Tasks</button><button class="tab-btn" data-tab="calendar">Calendar</button><button class="tab-btn" data-tab="meetings">Meetings</button><button class="tab-btn" data-tab="compose">Compose</button><button class="tab-btn" data-tab="decisions">Decisions</button><button class="tab-btn" data-tab="braindump">Brain Dump</button><button class="tab-btn" data-tab="settings">Settings</button></div></div>
 <div class="main">
 <div class="panel active" id="panel-today">
 <div class="stat-row"><div class="stat-pill"><span class="sp-num" style="color:var(--text)" id="sO">0</span><span class="sp-label">Open</span></div><div class="stat-pill"><span class="sp-num" style="color:var(--danger)" id="sD">0</span><span class="sp-label">Overdue</span></div><div class="stat-pill"><span class="sp-num" style="color:var(--info)" id="sM">0</span><span class="sp-label">Meetings</span></div><div class="stat-pill"><span class="sp-num" style="color:var(--success)" id="sC">0</span><span class="sp-label">Done</span></div></div>
@@ -47,6 +57,24 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-grad
 <div class="card" id="tMc" style="display:none"><div class="card-title">Today's Meetings</div><div id="tMs"></div></div>
 </div>
 <div class="panel" id="panel-tasks"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div class="card-title">All Tasks</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="expTasks()">📋 Export</button><button class="btn btn-primary btn-sm" onclick="om('task')">＋</button></div></div><div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap" id="fB"></div><div id="aT"></div></div></div>
+<div class="panel" id="panel-calendar">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<button class="btn btn-secondary btn-sm" onclick="calNav(-1)">← Prev</button>
+<div><span class="card-title" id="calTitle"></span></div>
+<div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="calToday()">Today</button><button class="btn btn-secondary btn-sm" onclick="calNav(1)">Next →</button><button class="btn btn-primary btn-sm" onclick="om('mtg')">＋ Meeting</button></div>
+</div>
+<div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+</div>
+<div class="card" id="calDayCard" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<div><div class="card-title" id="calDayTitle"></div><div class="card-subtitle" id="calDaySub"></div></div>
+<button class="btn btn-primary btn-sm" onclick="calAddMtg()">＋ Meeting</button>
+</div>
+<div id="calDayMeetings"></div>
+<div id="calDayTasks"></div>
+</div>
+</div>
 <div class="panel" id="panel-meetings"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div class="card-title">Meetings</div></div><button class="btn btn-primary btn-sm" onclick="om('mtg')">＋ New</button></div><div id="aM"></div></div></div>
 <div class="panel" id="panel-compose"><div class="card"><div class="card-title">Compose</div><div class="card-subtitle">Draft emails, agendas, updates — AI helps you write it</div><div class="compose-type-row"><button class="compose-type-btn active" onclick="sct('email',this)">✉️ Email</button><button class="compose-type-btn" onclick="sct('agenda',this)">📋 Agenda</button><button class="compose-type-btn" onclick="sct('update',this)">📊 Update</button><button class="compose-type-btn" onclick="sct('actions',this)">📝 Actions</button><button class="compose-type-btn" onclick="sct('custom',this)">✏️ Custom</button></div><div class="field-label">To / Audience</div><input class="text-input" id="cTo" placeholder="e.g. Katharine, Marina" style="margin-bottom:10px"><div class="field-label">What do you want to say?</div><textarea class="braindump-area" id="cPr" style="min-height:100px" placeholder="e.g. Update Katharine on progress, flag blockers, ask for sign-off"></textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="genC()">✨ Draft It</button><button class="btn btn-secondary" onclick="clrC()">Clear</button></div></div><div class="card" id="cOc" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title">Draft</div><div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="cpC()">📋 Copy</button><button class="btn btn-gold btn-sm" onclick="refC()">✨ Refine</button></div></div><div class="compose-output" id="cO"></div><div class="input-row" id="cRr" style="display:none"><input class="text-input" id="cRi" placeholder="e.g. shorter, more formal, add deadline..." onkeydown="if(event.key==='Enter')sRef()"><button class="btn btn-primary" onclick="sRef()">Send</button></div></div></div>
 <div class="panel" id="panel-decisions"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div class="card-title">Decision Log</div><div class="card-subtitle">What was decided, when, and why</div></div><button class="btn btn-primary btn-sm" onclick="om('dec')">＋ Log</button></div><div id="aD"></div></div></div>
@@ -61,7 +89,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-grad
 <script>
 const CT={project:{l:'Project',c:'tag-project'},payroll:{l:'Payroll & Reward',c:'tag-payroll'},risk:{l:'Risk / Blocker',c:'tag-risk'},stakeholder:{l:'Stakeholder',c:'tag-stakeholder'},meeting:{l:'Meeting Action',c:'tag-meeting'},change:{l:'Change & Comms',c:'tag-change'}};
 const TD=new Date().toDateString();let S={tasks:[],meetings:[],decisions:[],dumps:[],apiKey:'',lc:null};let cv=[],sp='',ccv=[],ctp='email';
-function init(){ld();document.getElementById('hd').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});gr();rT();rA();rMs();rTM();rDs();lDs();sts();flt();if(S.apiKey)document.getElementById('ak').value=S.apiKey;document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>st(b.dataset.tab)))}
+function init(){ld();document.getElementById('hd').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});gr();rT();rA();rMs();rTM();rDs();lDs();sts();flt();if(S.apiKey)document.getElementById('ak').value=S.apiKey;document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{st(b.dataset.tab);if(b.dataset.tab==='calendar')rCal()}))}
 function st(t){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelector('[data-tab="'+t+'"]').classList.add('active');document.getElementById('panel-'+t).classList.add('active')}
 function ld(){try{const s=localStorage.getItem('pp4');if(s)S={...S,...JSON.parse(s)}}catch(e){}}
 function sv(){try{localStorage.setItem('pp4',JSON.stringify(S))}catch(e){}}
@@ -101,7 +129,7 @@ function rT(){const c=document.getElementById('tT');const ts=S.tasks.filter(t=>!
 let cF='all';function flt(){document.getElementById('fB').innerHTML=['all','project','payroll','risk','stakeholder','meeting','change','done'].map(f=>'<button class="btn btn-secondary btn-sm '+(f===cF?'active':'')+'" onclick="fl(\''+f+'\',this)">'+(f==='all'?'All':f==='done'?'Done':(CT[f]||{}).l||f)+'</button>').join('')}
 function fl(f,b){cF=f;document.querySelectorAll('#fB .btn').forEach(x=>x.classList.remove('active'));b?.classList.add('active');rA()}
 function rA(){const c=document.getElementById('aT');let ts=cF==='done'?S.tasks.filter(t=>t.done):cF==='all'?S.tasks.filter(t=>!t.done):S.tasks.filter(t=>t.category===cF&&!t.done);ts.sort((a,b)=>({high:0,medium:1,low:2}[a.priority]||1)-({high:0,medium:1,low:2}[b.priority]||1));c.innerHTML=ts.length?ts.map(tH).join(''):'<div class="empty-state"><p>Nothing here.</p></div>'}
-function addM(){const t=document.getElementById('mt').value.trim();if(!t)return;S.meetings.push({id:Date.now()+'',title:t,date:document.getElementById('md').value||new Date().toISOString(),attendees:document.getElementById('ma').value.trim(),purpose:document.getElementById('mp').value.trim(),agenda:document.getElementById('mag').value.trim(),notes:'',actions:''});sv();cm();['mt','ma','mp','mag'].forEach(x=>document.getElementById(x).value='');document.getElementById('md').value='';rMs();rTM();sts()}
+function addM(){const t=document.getElementById('mt').value.trim();if(!t)return;S.meetings.push({id:Date.now()+'',title:t,date:document.getElementById('md').value||new Date().toISOString(),attendees:document.getElementById('ma').value.trim(),purpose:document.getElementById('mp').value.trim(),agenda:document.getElementById('mag').value.trim(),notes:'',actions:''});sv();cm();['mt','ma','mp','mag'].forEach(x=>document.getElementById(x).value='');document.getElementById('md').value='';rMs();rTM();sts();rCal()}
 async function aiAg(){if(!S.apiKey){alert('Add API key.');return}const t=document.getElementById('mt').value.trim();if(!t){alert('Add title first.');return}const b=event.target;b.textContent='...';b.disabled=true;try{const r=await ac('Draft meeting agendas. Concise, numbered. Monsoon Accessorize.',[{role:'user',content:'Agenda for: '+t+'\nAttendees: '+document.getElementById('ma').value+'\nPurpose: '+document.getElementById('mp').value}],500);document.getElementById('mag').value=r}catch(e){alert(e.message)}b.textContent='✨ AI Help';b.disabled=false}
 function mC(m,sd){const d=new Date(m.date);return '<div class="meeting-item" onclick="oMd(\''+m.id+'\')"><div class="meeting-title">'+m.title+'</div><div class="meeting-meta">'+(sd?d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(m.attendees?' · '+m.attendees:'')+'</div>'+(m.purpose?'<div style="font-size:11px;color:var(--text-sec);font-style:italic">'+m.purpose+'</div>':'')+'</div>'}
 function rMs(){const c=document.getElementById('aM');c.innerHTML=S.meetings.length?[...S.meetings].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(m=>mC(m,true)).join(''):'<div class="empty-state"><p>📋 No meetings yet.</p></div>'}
@@ -109,7 +137,7 @@ function rTM(){const ms=S.meetings.filter(m=>new Date(m.date).toDateString()===T
 function oMd(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;const d=new Date(m.date);document.getElementById('mdI').innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h3>'+m.title+'</h3><div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">'+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(m.attendees?' · '+m.attendees:'')+'</div></div><button class="btn btn-gold btn-sm" onclick="exAg(\''+m.id+'\')">📋 Export</button></div>'+(m.purpose?'<div class="section-label">Purpose</div><div style="font-size:13px;margin-bottom:14px;line-height:1.6">'+m.purpose+'</div>':'')+(m.agenda?'<div class="section-label">Agenda</div><div style="font-size:13px;margin-bottom:14px;line-height:1.7;white-space:pre-line">'+m.agenda+'</div>':'')+'<div class="section-label">Notes</div><textarea id="mn_'+m.id+'" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:DM Sans,sans-serif;font-size:13px;line-height:1.6;outline:none;margin-bottom:10px" placeholder="Capture notes...">'+(m.notes||'')+'</textarea><div class="section-label">Actions (one per line → tasks)</div><textarea id="mx_'+m.id+'" style="width:100%;min-height:60px;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:DM Sans,sans-serif;font-size:13px;line-height:1.6;outline:none;margin-bottom:12px" placeholder="One per line">'+(m.actions||'')+'</textarea><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-success btn-sm" onclick="svMn(\''+m.id+'\')">Save</button><button class="btn btn-gold btn-sm" onclick="a2t(\''+m.id+'\')">Actions → Tasks</button><button class="btn btn-danger btn-sm" onclick="dM(\''+m.id+'\')">Delete</button></div>';document.getElementById('m-detail').classList.add('open')}
 function svMn(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;m.notes=document.getElementById('mn_'+id).value;m.actions=document.getElementById('mx_'+id).value;sv();toast('Saved')}
 function a2t(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;svMn(id);const as=m.actions.split('\n').map(a=>a.trim()).filter(Boolean);if(!as.length){alert('No actions.');return}as.forEach(a=>{S.tasks.push({id:Date.now()+''+Math.random().toString(36).substr(2,4),text:a,category:'meeting',priority:'medium',due:null,done:false,dd:null,cr:TD})});sv();rT();rA();sts();toast(as.length+' added')}
-function dM(id){if(!confirm('Delete?'))return;S.meetings=S.meetings.filter(m=>m.id!==id);sv();cm();rMs();rTM();sts()}
+function dM(id){if(!confirm('Delete?'))return;S.meetings=S.meetings.filter(m=>m.id!==id);sv();cm();rMs();rTM();sts();rCal()}
 function exAg(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;const d=new Date(m.date);let h='<h2>'+m.title+'</h2><div class="ep-meta">'+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'<br>Attendees: '+(m.attendees||'TBC')+'</div>';if(m.purpose)h+='<h3>Purpose</h3><p>'+m.purpose+'</p>';if(m.agenda)h+='<h3>Agenda</h3><div style="white-space:pre-line">'+m.agenda+'</div>';if(m.notes)h+='<h3>Notes</h3><div style="white-space:pre-line">'+m.notes+'</div>';if(m.actions)h+='<h3>Actions</h3><ul>'+m.actions.split('\n').filter(Boolean).map(a=>'<li>'+a+'</li>').join('')+'</ul>';document.getElementById('exT').textContent='Meeting Agenda';document.getElementById('exC').innerHTML=h;document.getElementById('m-export').classList.add('open')}
 function expTasks(){const ts=S.tasks.filter(t=>!t.done).sort((a,b)=>({high:0,medium:1,low:2}[a.priority]||1)-({high:0,medium:1,low:2}[b.priority]||1));const g={};ts.forEach(t=>{const c=(CT[t.category]||{}).l||t.category;if(!g[c])g[c]=[];g[c].push(t)});let h='<h2>Open Tasks</h2><div class="ep-meta">'+new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' · '+ts.length+' tasks</div>';Object.keys(g).forEach(c=>{h+='<h3>'+c+'</h3><ul>'+g[c].map(t=>'<li>'+t.text+(t.due?' <em>('+new Date(t.due).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+')</em>':'')+(t.priority==='high'?' <strong style="color:var(--danger)">[HIGH]</strong>':'')+'</li>').join('')+'</ul>'});document.getElementById('exT').textContent='Task List';document.getElementById('exC').innerHTML=h;document.getElementById('m-export').classList.add('open')}
 function cpEx(){navigator.clipboard.writeText(document.getElementById('exC').innerText).then(()=>toast('Copied')).catch(()=>toast('Copy failed'))}
@@ -129,7 +157,75 @@ function savS(){S.apiKey=document.getElementById('ak').value.trim();sv();toast('
 function expJ(){const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='planner-'+new Date().toISOString().split('T')[0]+'.json';a.click()}
 function impJ(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(ev){try{const d=JSON.parse(ev.target.result);if(confirm('Import '+((d.tasks||[]).length)+' tasks, '+((d.meetings||[]).length)+' meetings? Replaces current data.')){const k=S.apiKey;S={...S,...d};S.apiKey=k;sv();location.reload()}}catch(err){alert('Invalid: '+err.message)}};r.readAsText(f)}
 function clrA(){if(confirm('Delete ALL data?')&&confirm('Sure?')){const k=S.apiKey;localStorage.removeItem('pp4');S={tasks:[],meetings:[],decisions:[],dumps:[],apiKey:k,lc:null};sv();location.reload()}}
-init();
+
+// ═══ CALENDAR ═══
+let calDate=new Date();
+let calSel=null;
+
+function rCal(){
+const grid=document.getElementById('calGrid');
+const y=calDate.getFullYear(),m=calDate.getMonth();
+const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+document.getElementById('calTitle').textContent=months[m]+' '+y;
+const first=new Date(y,m,1);const last=new Date(y,m+1,0);
+const startDay=(first.getDay()+6)%7;
+const today=new Date();today.setHours(0,0,0,0);
+let html='';
+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>{html+='<div class="cal-hdr">'+d+'</div>'});
+const prevLast=new Date(y,m,0).getDate();
+for(let i=startDay-1;i>=0;i--){
+const dn=prevLast-i;
+html+='<div class="cal-day other-month" onclick="calClick('+y+','+(m-1)+','+dn+')"><div class="cal-num">'+dn+'</div></div>';
+}
+for(let d=1;d<=last.getDate();d++){
+const dt=new Date(y,m,d);dt.setHours(0,0,0,0);
+const isToday=dt.getTime()===today.getTime();
+const isSel=calSel&&dt.toDateString()===calSel.toDateString();
+const dayMtgs=S.meetings.filter(mt=>{const md=new Date(mt.date);return md.getFullYear()===y&&md.getMonth()===m&&md.getDate()===d});
+const dayTasks=S.tasks.filter(t=>!t.done&&t.due&&new Date(t.due).toDateString()===dt.toDateString());
+let cls='cal-day';if(isToday)cls+=' today';if(isSel)cls+=' selected';
+html+='<div class="'+cls+'" onclick="calClick('+y+','+m+','+d+')">';
+html+='<div class="cal-num">'+d+'</div>';
+dayMtgs.slice(0,2).forEach(mt=>{
+const t=new Date(mt.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+html+='<span class="cal-mtg">'+t+' '+mt.title+'</span>';
+});
+if(dayMtgs.length>2)html+='<span style="font-size:7px;color:var(--text-muted)">+' +(dayMtgs.length-2)+' more</span>';
+if(dayTasks.length>0){html+='<div class="cal-dots">';for(let i=0;i<Math.min(dayTasks.length,4);i++)html+='<span class="cal-task-dot"></span>';html+='</div>'}
+html+='</div>';
+}
+const totalCells=startDay+last.getDate();const remaining=(7-totalCells%7)%7;
+for(let i=1;i<=remaining;i++){
+html+='<div class="cal-day other-month" onclick="calClick('+y+','+(m+1)+','+i+')"><div class="cal-num">'+i+'</div></div>';
+}
+grid.innerHTML=html;
+}
+
+function calClick(y,m,d){
+calSel=new Date(y,m,d);
+calDate=new Date(y,m,1);
+rCal();
+const dc=document.getElementById('calDayCard');dc.style.display='block';
+const ds=calSel.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+document.getElementById('calDayTitle').textContent=ds;
+const dayMtgs=S.meetings.filter(mt=>new Date(mt.date).toDateString()===calSel.toDateString());
+const dayTasks=S.tasks.filter(t=>!t.done&&t.due&&new Date(t.due).toDateString()===calSel.toDateString());
+document.getElementById('calDaySub').textContent=dayMtgs.length+' meeting'+(dayMtgs.length!==1?'s':'')+', '+dayTasks.length+' task'+(dayTasks.length!==1?'s':'')+' due';
+const mc=document.getElementById('calDayMeetings');
+if(dayMtgs.length){
+mc.innerHTML='<div class="section-label" style="margin-top:4px">MEETINGS</div>'+dayMtgs.map(mt=>mC(mt,false)).join('');
+}else{mc.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No meetings</div>'}
+const tc=document.getElementById('calDayTasks');
+if(dayTasks.length){
+tc.innerHTML='<div class="section-label" style="margin-top:12px">TASKS DUE</div>'+dayTasks.map(tH).join('');
+}else{tc.innerHTML=''}
+}
+
+function calNav(dir){calDate.setMonth(calDate.getMonth()+dir);rCal()}
+function calToday(){calDate=new Date();calSel=new Date();calDate.setDate(1);rCal();calClick(calSel.getFullYear(),calSel.getMonth(),calSel.getDate())}
+function calAddMtg(){if(calSel){const iso=calSel.toISOString().split('T')[0]+'T09:00';document.getElementById('md').value=iso}om('mtg')}
+
+init();rCal();
 </script>
 </body>
 </html>
