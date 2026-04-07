@@ -83,7 +83,6 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-grad
 <!-- TODAY PANEL -->
 <div class="panel active" id="panel-today">
 <div class="stat-row"><div class="stat-pill"><span class="sp-num" style="color:var(--text)" id="sO">0</span><span class="sp-label">Open</span></div><div class="stat-pill"><span class="sp-num" style="color:var(--danger)" id="sD">0</span><span class="sp-label">Overdue</span></div><div class="stat-pill"><span class="sp-num" style="color:var(--info)" id="sM">0</span><span class="sp-label">This week</span></div><div class="stat-pill"><span class="sp-num" style="color:var(--success)" id="sC">0</span><span class="sp-label">Done today</span></div></div>
-<div class="chart-grid" id="dashCharts"></div>
 <div class="quick-actions"><button class="qa-btn" onclick="ci('morning')">☀️ Check-In</button><button class="qa-btn" onclick="ci('preptomorrow')">🔮 Prep Tomorrow</button><button class="qa-btn" onclick="ci('weekahead')">📅 Week Ahead</button><button class="qa-btn" onclick="om('task')">＋ Task</button><button class="qa-btn" onclick="openMtgModal()">📋 Meeting</button><button class="qa-btn" onclick="ci('priorities')">🎯 Prioritise</button><button class="qa-btn" onclick="ci('stakeholder')">👤 Stakeholder</button><button class="qa-btn" onclick="ci('risk')">⚠️ Risk</button><button class="qa-btn" onclick="st('compose')">✉️ Compose</button><button class="qa-btn" onclick="ci('lowenergy')">🌊 Low Energy</button><button class="qa-btn" onclick="ci('endofday')">🌙 End of Day</button></div>
 <div class="checkin-area"><div class="checkin-greeting" id="gr"></div><div class="checkin-obs" id="ob"></div><div class="checkin-msgs" id="ms" style="display:none"></div><div class="input-row" id="ir" style="display:none"><input class="text-input" id="ci_in" placeholder="Type your response..." onkeydown="if(event.key==='Enter')sm()"><button class="btn btn-primary" onclick="sm()">Send</button></div></div>
 <div id="upcomingWeek"></div>
@@ -126,7 +125,8 @@ const PROJ=`Sarah Sayles is Project Manager at Monsoon Accessorize leading the H
 Go Live: 16 June 2026. UAT Opens: 18 May 2026. ~1,900 employees across Retail (~375 UK employees, ~37 stores), DC, and HO in UK, ROI, Jersey, Guernsey. Sarah also manages ongoing Payroll & Reward responsibilities — this is a dual role.
 STAKEHOLDERS: Katharine Jakeman — HR Director/Exec Sponsor (exec-level only). Marina Palmas — HR/Change Lead (needs support, Sarah mentoring). Simon Abbott — Payroll Specialist (detail person). David West — IT Lead. Anne Johnson — IT SPOC.
 WORKFORCE: RETAIL: ~150 stores, variable hours, high turnover, Employee ID login, SDWorx SFTP for starters. DC: AllDay T&A, SSO, has HRBP. HO: Salaried, SSO, no T&A.
-BLOCKERS: REM-004 SSP1 (HARD gate). REM-005 ROI SSP (HARD gate). Aegon file format (T2-004, before UAT). Pre-migration data cleansing (104 FPS, 76K MyView forms, 242 authorisations — all MANDATORY).
+BLOCKERS: Pre-migration data cleansing NOT STARTED — delete 104 unsent FPS submissions (MANDATORY), cleanse 76,184 MyView forms back to 2012 (MANDATORY), delete 242 stale MyView authorisations (MANDATORY). These are hard gate items and have not been touched yet. Jersey/Guernsey statutory rates need confirming with Zellis. Bespoke customisations converted from Oracle to SQL Server need UAT testing.
+RESOLVED (do NOT raise these as current issues): REM-004 SSP1 — RESOLVED. REM-005 ROI SSP — RESOLVED. Aegon file format T2-004 — RESOLVED.
 TOOLS BUILT: Process Library v12 (GitHub Pages), Consultation & Redundancy Tool v3 (with TUPE), Payroll Validation Tool (Phase B done, C/D pending), Interactive Data Flow, MyView Guide, This Planner.
 CURRENT WORKSTREAMS: SRW population for Zellis (MyPay Pro FAQs pending, PE categories needed, Intelligent Payslips 340 entries, MS365 Azure Client ID from David). Holiday compliance interim tool (urgent, spec questions pending). Pay Elements spreadsheet complete (580 PEs, 0001-8077).
 NEVER say "Adena Brands" — always "Monsoon Accessorize". Never "programme" — always "project". Never "BAU Payroll" — always "Payroll & Reward". No HRBPs except DC.`;
@@ -371,66 +371,9 @@ async function sortD(){const t=document.getElementById('dT').value.trim();if(!t|
 function lDs(){const c=document.getElementById('dH');const w=document.getElementById('pD');if(!S.dumps.length){w.style.display='none';return}w.style.display='block';c.innerHTML=S.dumps.slice(-5).reverse().map(d=>'<div style="padding:10px;border:1px solid var(--border-light);border-radius:8px;margin-bottom:6px"><div style="font-size:10px;color:var(--text-muted)">'+new Date(d.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div><div style="font-size:12px;color:var(--text-sec);margin-top:2px;line-height:1.5">'+esc(d.text.substring(0,180))+(d.text.length>180?'...':'')+'</div></div>').join('')}
 
 /* ═══ CHARTS ═══ */
-function rCharts(){
-  const el=document.getElementById('dashCharts');
-  const open=S.tasks.filter(t=>!t.done);const done=S.tasks.filter(t=>t.done);
-  if(!S.tasks.length){el.innerHTML='';return}
-  // Category breakdown
-  const cats={};open.forEach(t=>{const c=(CT[t.category]||{}).l||t.category;cats[c]=(cats[c]||0)+1});
-  // Priority breakdown
-  const pris={high:0,medium:0,low:0};open.forEach(t=>{pris[t.priority||'medium']++});
-  // Completion rate (last 14 days)
-  const now=new Date();const days=[];for(let i=13;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const ds=d.toDateString();const completed=S.tasks.filter(t=>t.done&&t.dd===ds).length;const created=S.tasks.filter(t=>t.cr===ds).length;days.push({d:d.toLocaleDateString('en-GB',{day:'numeric'}),completed,created})}
-  let h='';
-  // Category donut
-  h+='<div class="chart-card"><div class="chart-title">By Category</div><canvas id="catChart" width="240" height="160"></canvas><div class="chart-legend" id="catLeg"></div></div>';
-  // Priority bar
-  h+='<div class="chart-card"><div class="chart-title">By Priority</div><canvas id="priChart" width="240" height="160"></canvas></div>';
-  // Trend
-  h+='<div class="chart-card"><div class="chart-title">14-Day Activity</div><canvas id="trendChart" width="240" height="160"></canvas><div class="chart-legend"><div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--success)"></div>Completed</div><div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--primary)"></div>Created</div></div></div>';
-  el.innerHTML=h;
-  // Draw category donut
-  setTimeout(()=>{
-    const cc=document.getElementById('catChart');if(!cc)return;const ctx=cc.getContext('2d');
-    const colors=['#B8707A','#C9A87C','#C4686E','#6B8EAE','#8A6AAA','#5A8A8A'];
-    const entries=Object.entries(cats);const total=entries.reduce((a,e)=>a+e[1],0);
-    if(!total)return;
-    const cx=cc.width/2,cy=cc.height/2,r=Math.min(cx,cy)-10,ir=r*0.55;
-    let startAngle=-Math.PI/2;
-    entries.forEach(([cat,count],i)=>{
-      const slice=(count/total)*Math.PI*2;
-      ctx.beginPath();ctx.arc(cx,cy,r,startAngle,startAngle+slice);ctx.arc(cx,cy,ir,startAngle+slice,startAngle,true);ctx.closePath();ctx.fillStyle=colors[i%colors.length];ctx.fill();startAngle+=slice;
-    });
-    ctx.fillStyle='#2D2A26';ctx.font='bold 20px Playfair Display';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(total,cx,cy-6);ctx.font='11px DM Sans';ctx.fillStyle='#A09A94';ctx.fillText('open',cx,cy+10);
-    const leg=document.getElementById('catLeg');leg.innerHTML=entries.map(([cat,count],i)=>'<div class="chart-legend-item"><div class="chart-legend-dot" style="background:'+colors[i%colors.length]+'"></div>'+cat+' ('+count+')</div>').join('');
-    // Priority bar
-    const pc=document.getElementById('priChart');if(!pc)return;const pctx=pc.getContext('2d');
-    const bw=50,gap=20,startX=(pc.width-(3*bw+2*gap))/2;
-    const maxP=Math.max(pris.high,pris.medium,pris.low,1);
-    const pColors={'high':'#C4686E','medium':'#C9A249','low':'#A09A94'};
-    ['high','medium','low'].forEach((p,i)=>{
-      const x=startX+i*(bw+gap),bh=(pris[p]/maxP)*(pc.height-40),y=pc.height-20-bh;
-      pctx.fillStyle=pColors[p];pctx.beginPath();
-      const cr=6;pctx.moveTo(x+cr,y);pctx.lineTo(x+bw-cr,y);pctx.quadraticCurveTo(x+bw,y,x+bw,y+cr);pctx.lineTo(x+bw,pc.height-20);pctx.lineTo(x,pc.height-20);pctx.lineTo(x,y+cr);pctx.quadraticCurveTo(x,y,x+cr,y);pctx.fill();
-      pctx.fillStyle='#fff';pctx.font='bold 14px DM Sans';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillText(pris[p],x+bw/2,y+bh/2);
-      pctx.fillStyle='#6B6560';pctx.font='10px DM Sans';pctx.textBaseline='top';pctx.fillText(p.charAt(0).toUpperCase()+p.slice(1),x+bw/2,pc.height-16);
-    });
-    // Trend line
-    const tc=document.getElementById('trendChart');if(!tc)return;const tctx=tc.getContext('2d');
-    const tw=tc.width,th=tc.height,pad=20;const maxV=Math.max(...days.map(d=>Math.max(d.completed,d.created)),1);
-    const stepX=(tw-pad*2)/(days.length-1);
-    // Grid
-    tctx.strokeStyle='#EDE8E3';tctx.lineWidth=0.5;for(let i=0;i<4;i++){const y=pad+((th-pad*2)/3)*i;tctx.beginPath();tctx.moveTo(pad,y);tctx.lineTo(tw-pad,y);tctx.stroke()}
-    // Lines
-    function drawLine(data,key,color){tctx.strokeStyle=color;tctx.lineWidth=2;tctx.beginPath();data.forEach((d,i)=>{const x=pad+i*stepX,y=th-pad-(d[key]/maxV)*(th-pad*2);if(i===0)tctx.moveTo(x,y);else tctx.lineTo(x,y)});tctx.stroke();
-    // Dots
-    data.forEach((d,i)=>{if(!d[key])return;const x=pad+i*stepX,y=th-pad-(d[key]/maxV)*(th-pad*2);tctx.beginPath();tctx.arc(x,y,3,0,Math.PI*2);tctx.fillStyle=color;tctx.fill()})}
-    drawLine(days,'completed','#7EA87A');drawLine(days,'created','#B8707A');
-    // X labels
-    tctx.fillStyle='#A09A94';tctx.font='9px DM Sans';tctx.textAlign='center';
-    days.forEach((d,i)=>{if(i%3===0)tctx.fillText(d.d,pad+i*stepX,th-4)});
-  },50);
-}
+function rCharts(){}
+
+
 
 /* ═══ UPCOMING WEEK ═══ */
 function rUp(){
