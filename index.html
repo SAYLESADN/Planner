@@ -80,7 +80,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-grad
 <div id="calDayTasks"></div>
 </div>
 </div>
-<div class="panel" id="panel-meetings"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div class="card-title">Meetings</div></div><button class="btn btn-primary btn-sm" onclick="openMtgModal()">＋ New</button></div><div id="aM"></div></div></div>
+<div class="panel" id="panel-meetings"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div class="card-title">Meetings</div></div><div style="display:flex;gap:6px"><label class="btn btn-secondary btn-sm" style="cursor:pointer">📥 Import CSV<input type="file" accept=".csv" onchange="impMtgCSV(event)" style="display:none"></label><button class="btn btn-primary btn-sm" onclick="openMtgModal()">＋ New</button></div></div><div id="aM"></div></div></div>
 <div class="panel" id="panel-compose"><div class="card"><div class="card-title">Compose</div><div class="card-subtitle">Draft emails, agendas, updates — AI helps you write it</div><div class="compose-type-row"><button class="compose-type-btn active" onclick="sct('email',this)">✉️ Email</button><button class="compose-type-btn" onclick="sct('agenda',this)">📋 Agenda</button><button class="compose-type-btn" onclick="sct('update',this)">📊 Update</button><button class="compose-type-btn" onclick="sct('actions',this)">📝 Actions</button><button class="compose-type-btn" onclick="sct('custom',this)">✏️ Custom</button></div><div class="field-label">To / Audience</div><input class="text-input" id="cTo" placeholder="e.g. Katharine, Marina" style="margin-bottom:10px"><div class="field-label">What do you want to say?</div><textarea class="braindump-area" id="cPr" style="min-height:100px" placeholder="e.g. Update Katharine on progress, flag blockers, ask for sign-off"></textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="genC()">✨ Draft It</button><button class="btn btn-secondary" onclick="clrC()">Clear</button></div></div><div class="card" id="cOc" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title">Draft</div><div style="display:flex;gap:6px"><button class="btn btn-success btn-sm" onclick="cpC()">📋 Copy</button><button class="btn btn-gold btn-sm" onclick="refC()">✨ Refine</button></div></div><div class="compose-output" id="cO"></div><div class="input-row" id="cRr" style="display:none"><input class="text-input" id="cRi" placeholder="e.g. shorter, more formal, add deadline..." onkeydown="if(event.key==='Enter')sRef()"><button class="btn btn-primary" onclick="sRef()">Send</button></div></div></div>
 <div class="panel" id="panel-decisions"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div class="card-title">Decision Log</div><div class="card-subtitle">What was decided, when, and why</div></div><button class="btn btn-primary btn-sm" onclick="om('dec')">＋ Log</button></div><div id="aD"></div></div></div>
 <div class="panel" id="panel-braindump"><div class="card"><div class="card-title">Brain Dump</div><div class="card-subtitle">Get it out. Sort it later.</div><textarea class="braindump-area" id="dT" placeholder="Tasks, worries, ideas..."></textarea><div style="display:flex;gap:8px;margin-top:10px;justify-content:space-between"><span style="font-size:11px;color:var(--text-muted)" id="dMsg"></span><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="savD()">Save</button><button class="btn btn-gold btn-sm" onclick="sortD()">✨ AI Sort</button></div></div></div><div class="card" id="pD" style="display:none"><div class="card-title">Previous</div><div id="dH"></div></div></div>
@@ -128,35 +128,53 @@ const TD=new Date().toDateString();let S={tasks:[],meetings:[],decisions:[],dump
 /* ═══ PROJECT KNOWLEDGE ═══ */
 const PROJ=`Sarah Sayles is Project Manager at Monsoon Accessorize leading the HCM Air (Zellis) implementation — migrating from ResourceLink to Zellis HCM Air with MyView as the employee self-service portal.
 
-Go Live: 16 June 2026. UAT Opens: 18 May 2026. ~1,900 employees across Retail, DC, and HO in UK, ROI, Jersey, Guernsey. Sarah also manages ongoing Payroll & Reward responsibilities.
+Go Live: 16 June 2026. UAT Opens: 18 May 2026. ~1,900 employees across Retail (~375 UK employees, ~37 stores), DC, and HO in UK, ROI, Jersey, Guernsey. Sarah also manages ongoing Payroll & Reward responsibilities — this is a dual role and the workload is real.
 
-STAKEHOLDERS:
-- Katharine Jakeman — HR Director, Executive Sponsor. Sign-off level only.
-- Marina Palmas — HR/Change Lead. Owns change, training, comms. New to change management.
-- Simon Abbott — Payroll Specialist. Payroll validation, calculations, cycle tasks.
-- David West — IT Lead. SSO, infrastructure, provisioning.
-- Anne Johnson — IT SPOC. Day-to-day IT contact.
+STAKEHOLDERS — use their names, know their personalities:
+- Katharine Jakeman — HR Director, Executive Sponsor. Only gets exec-level outputs for sign-off. Don't overload her. She needs confidence that things are on track.
+- Marina Palmas — HR/Change Lead. Owns change, training, comms workstream. Relatively new to change management — needs support and gentle guidance. Sarah is mentoring her through this.
+- Simon Abbott — Payroll Specialist. Payroll validation, calculations, cycle tasks. The detail person. Needs specifics.
+- David West — IT Lead. SSO, infrastructure, provisioning. Technical conversations.
+- Anne Johnson — IT SPOC. Day-to-day IT contact for the project.
 
-WORKFORCE GROUPS:
-- RETAIL: Variable hours, high turnover, store-based. Employee ID/password login. New starters via SDWorx SFTP (NOT direct HCM Air). Leave management moves to MyView at Go Live.
-- DC: Shift/hourly. AllDay T&A. SSO login. Work pattern mastering TBC between HCM Air and AllDay.
-- HO: Salaried. No T&A. SSO login. Manager access expansion is the main change.
+WORKFORCE GROUPS — each is different:
+- RETAIL: ~150 stores (Monsoon -M suffix, Accessorize -A/-D/-O/-C suffix). Variable hours, high turnover, store-based. Employee ID/password login on in-store devices. New starters remain via SDWorx SFTP feed to HCM Air — NOT direct entry. Leave management moves to MyView at Go Live. Store managers are primary managers. RBMs: Abbie Thomas Ware (West), Kari Nyack (East), Rosemarie Black (North).
+- DC: Shift/hourly workers. AllDay T&A system. SSO login. Direct HCM Air input. Work pattern mastering TBC between HCM Air and AllDay. DC has its own HRBP (only group with one). DC New Starter process mapped with 20+ steps including DC Ops → DC General Manager → HRSS approval chain.
+- HO: Salaried staff. No T&A. SSO login. Manager access expansion is the primary change.
 
-BLOCKERS & RISKS:
-- REM-004: SSP1 statutory compliance — open with Zellis. Hard Go Live blocker.
-- REM-005: ROI SSP compliance — open with Zellis. Hard Go Live blocker.
-- Aegon file format (T2-004) — must resolve before UAT 18 May.
-- Jersey/Guernsey statutory rates — confirming with Zellis.
-- Bespoke Oracle-to-SQL conversion — needs UAT testing.
-- Pre-migration: delete 104 unsent FPS (mandatory), cleanse 76k MyView forms (mandatory), audit cleanse (recommended), leaver control groups (recommended).
+BLOCKERS & RISKS (keep chasing these):
+- REM-004: SSP1 statutory compliance — open with Zellis. HARD Go Live blocker.
+- REM-005: ROI SSP compliance — open with Zellis. HARD Go Live blocker.
+- Aegon file format confirmation (T2-004) — must resolve before UAT 18 May.
+- Jersey/Guernsey statutory rates — need confirming with Zellis.
+- Bespoke customisations being converted from Oracle to SQL Server — need UAT testing.
+- Pre-migration data cleansing identified from Zellis health check: delete 104 unsent FPS submissions (MANDATORY), cleanse 76,184 MyView forms back to 2012 (MANDATORY), delete 242 stale MyView authorisations (MANDATORY), audit cleanse of 7.2M rows (recommended), leaver control group setup for 13,710 leavers (recommended), delete pending HRI transactions from 2007 (recommended).
+- Power Automate / Microsoft account provisioning scoping question still open — raised but not yet answered.
 
-SYSTEMS: HCM Air/Zellis (target), ResourceLink (legacy), MyView (self-service), SDWorx/WFM (Retail starters/timesheets), AllDay (DC T&A), Harbour (ATS), Aegon (pensions).
+SYSTEMS: HCM Air/Zellis (target), ResourceLink (legacy, version RA01R34B, customer prefix ZM), MyView (self-service), SDWorx/WFM (Retail starters/timesheets), AllDay (DC T&A), Harbour (ATS), Aegon (pensions).
 
-PROCESSES FOR GO LIVE:
-My Team: personal details, emergency contact, bank details, new starter (HO/DC), leaver, hours change, pay change, internal transfer, record sickness, work pattern.
-My Forms: contract acceptance, HMRC starter checklist, self-cert, return to work, resignation→leaver chain, exit interview, KIT day, pension, induction checklist, uniform request.
+TOOLS SARAH HAS BUILT (with Claude):
+- Process Library (ProcessLibrary_v12.html) — full process mapping tool on GitHub Pages (SAYLESADN/process-library)
+- Consultation & Redundancy Tool v3 — with TUPE, 9 outcome types, 4 jurisdictions (UK/ROI/Jersey/Guernsey), 150 stores, letter generation
+- Payroll Validation Tool — audits monthly payroll using ResourceLink VAR and SDWorx WFM data
+- Interactive Data Flow — new starter workflows for Retail and HO/DC
+- MyView Employee & Manager Guide — drafted
+- This Project Planner
 
-NEVER say "Adena Brands" — always "Monsoon Accessorize".`;
+PROCESSES BEING CONFIGURED:
+My Team Processes: personal details, emergency contact, bank details, new starter (HO/DC), leaver, hours change, pay change, internal transfer, record sickness, work pattern.
+My Forms: contract acceptance, HMRC starter checklist, self-cert, return to work, resignation (triggers leaver process), exit interview, KIT day, pension opt-in/out, induction checklist, uniform request.
+Critical chain: Resignation → Manager approval → Leaver process → HR/Payroll notification → Final pay.
+
+STILL TO DO:
+- Complete holiday compliance interim tool (Employment Rights Act 2025 bridging tool for Retail stores)
+- Resolve Power Automate / Microsoft provisioning scoping
+- Six DC New Starter sub-processes to map: Recruitment DC, New Starter My Forms, Employee First Login, Document Transfer and Storage, Payroll First Run Check, AllDay T&A Setup
+- UAT test plan and test scripts
+- Training plan and schedule
+- Comms plan for all three groups
+
+NEVER say "Adena Brands" — always "Monsoon Accessorize". Never say "programme" — always "project". Never say "BAU Payroll" — always "Payroll & Reward". No HRBPs exist except at DC.`;
 
 const ACTIONS_INST=`
 You can CREATE ITEMS in Sarah's planner with blocks at the END of your message. Text goes BEFORE blocks. Use multiple blocks if needed. BE PROACTIVE — if you suggest something actionable, create it.
@@ -184,10 +202,10 @@ return{t,m,d,done}}
 
 function bSys(mode){
 const cx=bCtx();const dtg=Math.ceil((new Date('2026-06-16')-new Date())/(864e5));const uat=Math.ceil((new Date('2026-05-18')-new Date())/(864e5));
-return `You are Sarah's AI project assistant — deeply embedded in her work. You know this project as well as she does.
+return `You are Sarah's AI project sidekick. Not a corporate assistant — a proper colleague who knows this project inside out, genuinely wants her to succeed, and isn't afraid to be real with her.
 
 Today: ${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-Days to Go Live: ${dtg} | Days to UAT: ${uat}
+${dtg} days to Go Live | ${uat} days to UAT — ${dtg < 30 ? 'it\\'s getting real now' : dtg < 60 ? 'the countdown is on' : 'plenty of runway but no time to waste'}
 
 ${PROJ}
 
@@ -200,22 +218,33 @@ Recent decisions:\n${cx.d}
 
 Recently completed:\n${cx.done}
 
-YOUR STYLE: Warm, direct, concise (2-4 sentences in chat, longer for deliverables). One question at a time. Be proactive — flag risks, create tasks, suggest meetings. Reference stakeholders by name. Know the Retail/HO/DC differences. Factor in Go Live and UAT urgency.
+YOUR STYLE: You're Sarah's hype woman AND her project brain. Talk like a supportive, switched-on colleague — not a corporate chatbot. Be real, be warm, be direct. Use short punchy sentences. Celebrate wins. Call out risks without sugar-coating. Swear mildly if it fits the energy (bloody hell, that's a lot). Use humour when appropriate. Never be patronising.
 
-For Katharine: executive level. For Marina: supportive, guiding. For Simon: payroll detail. For David/Anne: technical.
+Keep it concise in chat (2-4 sentences). Go longer when producing deliverables, emails, or agendas.
+
+Be PROACTIVE — don't wait to be asked. If you see a risk, say it. If something needs a task, make it. If a meeting is overdue, suggest it. If Sarah's smashing it, tell her.
+
+You know what Sarah has already built — the Process Library, the Redundancy Tool, the Payroll Validation tool, the Data Flows. Reference these when relevant. She's not starting from scratch — she's deep in delivery.
+
+When writing for different people:
+- Katharine: polished, confident, brief. She needs to know it's handled.
+- Marina: supportive, clear, guiding. She's growing into the role.
+- Simon: detail-oriented, specific numbers and dates.
+- David/Anne: technical, no fluff.
+- Zellis: firm, professional, chase mode.
 
 ${ACTIONS_INST}
 
 MODE: ${mode}`}
 
-const MO={morning:'Morning check-in. Review yesterday, overdue items, today and tomorrow meetings, help prioritise. Surface risks and things Sarah should be thinking about. Be proactive with task creation.',
-priorities:'Prioritise ruthlessly. What 2-3 things make the biggest difference? What can wait? Be direct. Create the priority tasks.',
-stakeholder:'Stakeholder review. Go through each key stakeholder by name. Who needs an update? Who is Sarah chasing? Who is she waiting on? Any relationship maintenance? Create stakeholder tasks.',
-risk:'Risk review. What could go wrong this week? Project risks AND payroll risks. Dependencies. What is being avoided? Create risk tasks if needed.',
-lowenergy:'LOW ENERGY. Extra gentle. 1-2 tasks max. No pressure. Permission to do less.',
-endofday:'End of day. What got done, what carries forward. Log any decisions made today. Quick.',
-preptomorrow:'PREP TOMORROW. For each meeting tomorrow: attendees, purpose, what to prepare, open items for those people. Tasks due tomorrow that need prep today. Create prep tasks.',
-weekahead:'WEEK AHEAD. Day-by-day: meetings, due tasks, deadlines. Heavy vs light days. Prep needed. Stakeholders appearing multiple times. Create recommended prep tasks for today.'};
+const MO={morning:'Morning check-in. Hey Sarah — let\'s get your head straight for today. What happened yesterday, what\'s overdue, what\'s coming up today and tomorrow. Help her prioritise and feel in control. Celebrate anything she got done. Flag anything that needs attention. Create tasks proactively.',
+priorities:'Priority mode. Cut through the noise. What are the 2-3 things that will actually move the needle today? Everything else can wait. Be ruthless. Create the priority tasks.',
+stakeholder:'Stakeholder round-up. Go through Katharine, Marina, Simon, David, Anne by name. Who needs what? Who is Sarah chasing? Who owes her something? Any conversations she should be having this week? Create stakeholder tasks.',
+risk:'Risk check. What could bite her this week? Think about the Go Live blockers, the UAT prep, the data cleansing, the Zellis dependencies. What is she avoiding? What needs escalating? Be honest. Create risk tasks.',
+lowenergy:'Low energy day. That\'s okay. Genuinely. Some days are just like that. Pick ONE thing that would feel good to get done. Maybe two if she\'s feeling it. No guilt, no pressure. She\'s allowed to have a quiet day.',
+endofday:'End of day wind-down. What got done? Even small things count. What carries forward? Any decisions to capture? Keep it quick and positive. She\'s done enough today.',
+preptomorrow:'Prep for tomorrow. Look at what\'s in the diary — meetings, deadlines, due tasks. For each meeting: who\'s there, what do they need, what should Sarah have ready? Any tasks she should knock off today to make tomorrow smoother? Create prep tasks.',
+weekahead:'Week ahead view. Give her the full picture — day by day, what\'s coming. Which days are heavy, which are light. Where should she front-load effort? Any meetings that need prep started today? Stakeholders she\'ll see multiple times — batch those conversations. Create recommended tasks for getting ahead.'};
 
 /* ═══ INIT ═══ */
 function init(){ld();document.getElementById('hd').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});gr();rT();rA();rMs();rUp();rDs();lDs();sts();flt();if(S.apiKey)document.getElementById('ak').value=S.apiKey;document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{st(b.dataset.tab);if(b.dataset.tab==='calendar')rCal()}))}
@@ -223,7 +252,7 @@ function st(t){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remo
 function ld(){try{const s=localStorage.getItem('pp4');if(s)S={...S,...JSON.parse(s)}}catch(e){}}
 function sv(){try{localStorage.setItem('pp4',JSON.stringify(S))}catch(e){}}
 function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2500)}
-function gr(){const h=new Date().getHours();document.getElementById('gr').textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Sarah';const o=S.tasks.filter(t=>!t.done).length;const od=S.tasks.filter(t=>!t.done&&t.due&&new Date(t.due)<new Date()).length;document.getElementById('ob').textContent=od>0?od+' overdue — tap Check-In to triage.':o>0?o+' open tasks. Tap Check-In to plan.':'Clean slate. Add tasks or check in.'}
+function gr(){const h=new Date().getHours();const greetings=['Morning Sarah — let\'s do this','Hey Sarah, afternoon check-in','Evening Sarah — wrapping up?'];const g=h<12?greetings[0]:h<17?greetings[1]:greetings[2];document.getElementById('gr').textContent=g;const o=S.tasks.filter(t=>!t.done).length;const od=S.tasks.filter(t=>!t.done&&t.due&&new Date(t.due)<new Date()).length;const dtg=Math.ceil((new Date('2026-06-16')-new Date())/(864e5));document.getElementById('ob').textContent=od>0?od+' overdue — let\'s triage. You\'ve got this. '+dtg+' days to Go Live.':o>0?o+' tasks on your plate. '+dtg+' days to Go Live. Tap Check-In to get focused.':'Clean slate! '+dtg+' days to Go Live. Add tasks or run your check-in.'}
 function sts(){document.getElementById('sO').textContent=S.tasks.filter(t=>!t.done).length;document.getElementById('sD').textContent=S.tasks.filter(t=>!t.done&&t.due&&new Date(t.due)<new Date()).length;const we=new Date();we.setDate(we.getDate()+7);document.getElementById('sM').textContent=S.meetings.filter(m=>{const d=new Date(m.date);return d>=new Date(TD)&&d<=we}).length;document.getElementById('sC').textContent=S.tasks.filter(t=>t.done&&t.dd===TD).length}
 function om(t){document.getElementById('m-'+t).classList.add('open');const f=document.querySelector('#m-'+t+' input[type="text"]');if(f)f.focus()}
 function cm(){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'))}
@@ -276,10 +305,33 @@ function openMtgModal(editId){editMtgId=editId||null;document.getElementById('mt
 function addM(){savMtg()}
 function savMtg(){const t=document.getElementById('mt').value.trim();if(!t)return;const data={title:t,date:document.getElementById('md').value||new Date().toISOString(),attendees:document.getElementById('ma').value.trim(),purpose:document.getElementById('mp').value.trim(),agenda:document.getElementById('mag').value.trim(),type:document.getElementById('mType').value,duration:document.getElementById('mDur').value};if(editMtgId){const m=S.meetings.find(x=>x.id===editMtgId);if(m)Object.assign(m,data);toast('Updated')}else{S.meetings.push({id:Date.now()+'',notes:'',actions:'',...data});toast('Created')}editMtgId=null;sv();cm();['mt','ma','mp','mag'].forEach(x=>document.getElementById(x).value='');document.getElementById('md').value='';rMs();rUp();sts();rCal()}
 
-async function aiAg(){if(!S.apiKey){alert('Add API key.');return}const t=document.getElementById('mt').value.trim();if(!t){alert('Add title first.');return}const b=event.target;b.textContent='...';b.disabled=true;try{const r=await ac(bSys('Draft a detailed, practical meeting agenda. Use your knowledge of the project, attendees, and current priorities.'),[{role:'user',content:'Draft agenda for: '+t+'\nType: '+(document.getElementById('mType').value||'general')+'\nAttendees: '+document.getElementById('ma').value+'\nPurpose: '+document.getElementById('mp').value+'\n\nMake it specific to our project context. Number the items. Include time estimates if helpful.'}],600);document.getElementById('mag').value=r}catch(e){alert(e.message)}b.textContent='✨ AI Help';b.disabled=false}
+async function aiAg(){if(!S.apiKey){alert('Add API key.');return}const t=document.getElementById('mt').value.trim();if(!t){alert('Add title first.');return}const b=event.target;b.textContent='...';b.disabled=true;try{const r=await ac(bSys('Draft a meeting agenda. Make it specific to the HCM Air project — not generic. Use your knowledge of the attendees, the current blockers, what\'s been decided recently, and what\'s coming up. Number the items. Include time estimates.'),[{role:'user',content:'Draft agenda for: '+t+'\nType: '+(document.getElementById('mType').value||'general')+'\nAttendees: '+document.getElementById('ma').value+'\nPurpose: '+document.getElementById('mp').value+'\n\nMake it real — reference actual project items, not placeholder text.'}],600);document.getElementById('mag').value=r}catch(e){alert(e.message)}b.textContent='✨ AI Help';b.disabled=false}
 
 function mC(m,sd){const d=new Date(m.date);return '<div class="meeting-item" onclick="oMd(\''+m.id+'\')"><div class="meeting-title">'+m.title+'</div><div class="meeting-meta">'+(sd?d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+' ':'')+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(m.duration?' · '+m.duration+'m':'')+(m.attendees?' · '+m.attendees:'')+'</div>'+(m.purpose?'<div style="font-size:11px;color:var(--text-sec);font-style:italic">'+m.purpose+'</div>':'')+'</div>'}
-function rMs(){const c=document.getElementById('aM');c.innerHTML=S.meetings.length?[...S.meetings].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(m=>mC(m,true)).join(''):'<div class="empty-state"><p>📋 No meetings yet.</p></div>'}
+function rMs(){const c=document.getElementById('aM');c.innerHTML=S.meetings.length?[...S.meetings].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(m=>mC(m,true)).join(''):'<div class="empty-state"><p>📋 No meetings yet. Import from CSV or add manually.</p></div>'}
+function impMtgCSV(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(ev){
+const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2){alert('Empty file.');return}
+const hdr=parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+const ti=hdr.indexOf('title');const di=hdr.indexOf('date');const si=hdr.indexOf('start time');
+const duri=hdr.indexOf('duration (mins)');const ai=hdr.indexOf('attendees');
+const pi=hdr.indexOf('purpose');const agi=hdr.indexOf('agenda');const tyi=hdr.indexOf('type');
+if(ti<0||di<0){alert('CSV must have Title and Date columns.');return}
+let added=0;
+for(let i=1;i<lines.length;i++){
+const vals=parseCSVLine(lines[i]);if(!vals[ti])continue;
+const dateStr=vals[di]||'';const timeStr=vals[si]||'09:00';
+const dt=dateStr+'T'+timeStr;
+S.meetings.push({id:Date.now()+''+Math.random().toString(36).substr(2,4),
+title:vals[ti],date:dt,duration:vals[duri]||'30',
+attendees:vals[ai]||'',purpose:vals[pi]||'',
+agenda:(vals[agi]||'').replace(/\\n/g,'\n'),
+type:vals[tyi]||'other',notes:'',actions:''});added++}
+sv();rMs();rUp();sts();rCal();toast(added+' meeting'+(added!==1?'s':'')+' imported');e.target.value=''};r.readAsText(f)}
+function parseCSVLine(line){const result=[];let cur='';let inQ=false;
+for(let i=0;i<line.length;i++){const c=line[i];
+if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++}else{inQ=!inQ}}
+else if(c===','&&!inQ){result.push(cur);cur=''}
+else{cur+=c}}result.push(cur);return result}
 function oMd(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;const d=new Date(m.date);document.getElementById('mdI').innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h3>'+m.title+'</h3><div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">'+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(m.duration?' · '+m.duration+' min':'')+(m.attendees?' · '+m.attendees:'')+'</div></div><div style="display:flex;gap:6px"><button class="btn btn-secondary btn-sm" onclick="cm();openMtgModal(\''+m.id+'\')">✏️ Edit</button><button class="btn btn-gold btn-sm" onclick="exAg(\''+m.id+'\')">📋 Export</button></div></div>'+(m.purpose?'<div class="section-label">Purpose</div><div style="font-size:13px;margin-bottom:14px;line-height:1.6">'+m.purpose+'</div>':'')+(m.agenda?'<div class="section-label">Agenda</div><div style="font-size:13px;margin-bottom:14px;line-height:1.7;white-space:pre-line">'+m.agenda+'</div>':'')+'<div class="section-label">Notes</div><textarea id="mn_'+m.id+'" style="width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:DM Sans,sans-serif;font-size:13px;line-height:1.6;outline:none;margin-bottom:10px" placeholder="Capture notes...">'+(m.notes||'')+'</textarea><div class="section-label">Actions (one per line → tasks)</div><textarea id="mx_'+m.id+'" style="width:100%;min-height:60px;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:DM Sans,sans-serif;font-size:13px;line-height:1.6;outline:none;margin-bottom:12px" placeholder="One per line">'+(m.actions||'')+'</textarea><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-success btn-sm" onclick="svMn(\''+m.id+'\')">Save Notes</button><button class="btn btn-gold btn-sm" onclick="a2t(\''+m.id+'\')">Actions → Tasks</button><button class="btn btn-danger btn-sm" onclick="dM(\''+m.id+'\')">Delete</button></div>';document.getElementById('m-detail').classList.add('open')}
 function svMn(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;m.notes=document.getElementById('mn_'+id).value;m.actions=document.getElementById('mx_'+id).value;sv();toast('Saved')}
 function a2t(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;svMn(id);const as=m.actions.split('\n').map(a=>a.trim()).filter(Boolean);if(!as.length){alert('No actions.');return}as.forEach(a=>{S.tasks.push({id:Date.now()+''+Math.random().toString(36).substr(2,4),text:a,category:'meeting',priority:'medium',due:null,done:false,dd:null,cr:TD})});sv();rT();rA();sts();rUp();toast(as.length+' added')}
@@ -292,12 +344,12 @@ function prEx(){const c=document.getElementById('exC').innerHTML;const w=window.
 /* ═══ COMPOSE ═══ */
 function sct(t,b){ctp=t;document.querySelectorAll('.compose-type-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
 async function genC(){if(!S.apiKey){alert('Add API key.');return}const to=document.getElementById('cTo').value.trim();const pr=document.getElementById('cPr').value.trim();if(!pr){alert('Tell me what to write.');return}
-const sys=bSys('Help Sarah write. '+{email:'Draft a professional email. Include Subject: line.',agenda:'Draft a meeting agenda.',update:'Draft a project status update.',actions:'Create a formatted action list.',custom:'Draft what she asks for.'}[ctp]);
+const sys=bSys('Help Sarah write. Match the tone to who it\'s going to. '+{email:'Draft a professional but warm email. Include Subject: line. If it\'s to Katharine keep it exec-level. If to Zellis, firm and chase-mode.',agenda:'Draft a meeting agenda that\'s specific to this project. Not generic corporate fluff — real items with context.',update:'Draft a project status update. Confident, clear, honest about risks.',actions:'Create a formatted action list with owners and deadlines.',custom:'Draft what she asks for. Match the context.'}[ctp]);
 ccv=[{role:'user',content:(to?'To: '+to+'\n':'')+pr}];document.getElementById('cOc').style.display='block';document.getElementById('cO').innerHTML='<em style="color:var(--text-muted)">Drafting...</em>';try{const r=await ac(sys,ccv,1500);ccv.push({role:'assistant',content:r});document.getElementById('cO').textContent=r}catch(e){document.getElementById('cO').textContent='Error: '+e.message}}
 function cpC(){navigator.clipboard.writeText(document.getElementById('cO').textContent).then(()=>toast('Copied')).catch(()=>toast('Failed'))}
 function clrC(){document.getElementById('cTo').value='';document.getElementById('cPr').value='';document.getElementById('cOc').style.display='none';ccv=[]}
 function refC(){document.getElementById('cRr').style.display='flex';document.getElementById('cRi').focus()}
-async function sRef(){const i=document.getElementById('cRi');const t=i.value.trim();if(!t)return;i.value='';ccv.push({role:'user',content:t});document.getElementById('cO').innerHTML='<em style="color:var(--text-muted)">Refining...</em>';try{const r=await ac(bSys('Refine Sarah\'s draft. Apply her feedback. Return updated draft only.'),ccv,1500);ccv.push({role:'assistant',content:r});document.getElementById('cO').textContent=r}catch(e){document.getElementById('cO').textContent='Error: '+e.message}}
+async function sRef(){const i=document.getElementById('cRi');const t=i.value.trim();if(!t)return;i.value='';ccv.push({role:'user',content:t});document.getElementById('cO').innerHTML='<em style="color:var(--text-muted)">Refining...</em>';try{const r=await ac(bSys('Sarah wants to tweak her draft. Apply her feedback and give her back the updated version. Don\'t explain what you changed — just give her the new draft.'),ccv,1500);ccv.push({role:'assistant',content:r});document.getElementById('cO').textContent=r}catch(e){document.getElementById('cO').textContent='Error: '+e.message}}
 
 /* ═══ DECISIONS ═══ */
 function addDe(){const t=document.getElementById('dt').value.trim();if(!t)return;S.decisions.push({id:Date.now()+'',text:t,context:document.getElementById('dc').value.trim(),owner:document.getElementById('do').value.trim(),date:new Date().toISOString()});sv();cm();['dt','dc','do'].forEach(x=>document.getElementById(x).value='');rDs()}
@@ -306,7 +358,7 @@ function rDs(){const c=document.getElementById('aD');c.innerHTML=S.decisions.len
 /* ═══ BRAIN DUMP ═══ */
 function savD(){const t=document.getElementById('dT').value.trim();if(!t)return;S.dumps.push({id:Date.now()+'',date:new Date().toISOString(),text:t});sv();document.getElementById('dT').value='';document.getElementById('dMsg').textContent='Saved ✓';setTimeout(()=>document.getElementById('dMsg').textContent='',2500);lDs()}
 async function sortD(){const t=document.getElementById('dT').value.trim();if(!t||!S.apiKey)return;st('today');const ms=document.getElementById('ms');ms.style.display='flex';document.getElementById('ir').style.display='flex';ms.innerHTML='';am('loading','Sorting...');
-sp=bSys('Sort Sarah\'s brain dump into actionable tasks (with categories), ideas for later, and things to let go. Create task blocks for anything actionable.');
+sp=bSys('Sort Sarah\'s brain dump. She\'s emptied her head — now help her make sense of it. Pull out actionable tasks (with categories and priorities), ideas worth parking, and stuff she can let go of. Be encouraging. Create task blocks for anything actionable. If something relates to a known blocker or upcoming deadline, flag it.');
 cv=[{role:'user',content:'Sort this brain dump:\n\n'+t}];
 try{const r=await ac(sp,cv);cv.push({role:'assistant',content:r});ms.innerHTML='';am('ai',r)}catch(e){ms.innerHTML='';am('ai','Error: '+e.message)}}
 function lDs(){const c=document.getElementById('dH');const w=document.getElementById('pD');if(!S.dumps.length){w.style.display='none';return}w.style.display='block';c.innerHTML=S.dumps.slice(-5).reverse().map(d=>'<div style="padding:10px;border:1px solid var(--border-light);border-radius:8px;margin-bottom:6px"><div style="font-size:10px;color:var(--text-muted)">'+new Date(d.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div><div style="font-size:12px;color:var(--text-sec);margin-top:2px;line-height:1.5">'+d.text.substring(0,180)+(d.text.length>180?'...':'')+'</div></div>').join('')}
@@ -346,7 +398,7 @@ async function prepMtg(id){
 if(!S.apiKey){alert('Add API key.');return}const m=S.meetings.find(x=>x.id===id);if(!m)return;
 const ms=document.getElementById('ms');const ir=document.getElementById('ir');ms.style.display='flex';ir.style.display='flex';ms.innerHTML='';am('loading','Prepping '+m.title+'...');
 const d=new Date(m.date);
-sp=bSys('MEETING PREP for: '+m.title+' on '+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Attendees: '+(m.attendees||'TBC')+'. Purpose: '+(m.purpose||'Not set')+'. Agenda: '+(m.agenda||'Not set')+'. Tell Sarah what to review, what to bring up, open items for attendees, talking points, and what to prepare. Create prep tasks if needed. Be specific.');
+sp=bSys('MEETING PREP for: '+m.title+' on '+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+' at '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Attendees: '+(m.attendees||'TBC')+'. Purpose: '+(m.purpose||'Not set')+'. Agenda: '+(m.agenda||'Not set')+'. Help Sarah walk in prepared and confident. What should she review? What should she bring up? Any open items for these specific people? What\'s the one thing she needs to get out of this meeting? Create prep tasks if needed.');
 cv=[{role:'user',content:'Help me prep for '+m.title}];
 try{const r=await ac(sp,cv);cv.push({role:'assistant',content:r});ms.innerHTML='';am('ai',r)}catch(e){ms.innerHTML='';am('ai','Error: '+e.message)}}
 
