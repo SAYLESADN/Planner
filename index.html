@@ -902,13 +902,13 @@ function showSass(html){
 }
 
 function cmdReplan(){
-  if(!STATE.brainFile){showSass('<div style="font-size:13px">Load the Brain File first (🧠 button). Without it I\'m just guessing.</div>');return}
+  // Brain file optional — commands work with or without it
   showSass('<div style="text-align:center;padding:20px;color:var(--text-3)">🔄 Thinking...</div>');
   const active=STATE.tasks.filter(t=>t.active&&!t.done);
   const hrsLeft=Math.max(0,17-new Date().getHours());
   callClaude('Replan my day. I have '+hrsLeft+' hours left. '+active.length+' active tasks. '+STATE.calendar.length+' meetings. Tell me what to focus on, what to cut if needed, and give me a time-blocked plan for the rest of the day. Be realistic and firm.','Replan mode. Be direct. Cut tasks if needed — do NOT ask permission.').then(resp=>{
     showSass('<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">🔄 Replanned</div><div style="font-size:12px;line-height:1.7;white-space:pre-wrap">'+esc(resp)+'</div>');
-  });
+  }).catch(e=>{showSass('<div style="color:var(--red);font-size:13px"><b>API Error:</b> '+e.message+'<br><br>Check your 🔑 API key is correct and you have an internet connection.</div>')});
 }
 
 function cmdWhatNow(){
@@ -916,7 +916,7 @@ function cmdWhatNow(){
     showSass('<div style="text-align:center;padding:20px;color:var(--text-3)">👉 Thinking...</div>');
     callClaude('What should I do right now? Give me the single most important thing and tell me exactly how to start it. No options. One instruction.','Be extremely direct. Name the exact task. Give a concrete first action.').then(resp=>{
       showSass('<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">👉 Do this now:</div><div style="font-size:13px;line-height:1.7;white-space:pre-wrap">'+esc(resp)+'</div>');
-    });
+    }).catch(e=>{showSass('<div style="color:var(--red);font-size:13px"><b>API Error:</b> '+e.message+'<br><br>Check your 🔑 API key is correct and you have an internet connection.</div>')});
   } else {
     // Fallback — local logic
     const active=STATE.tasks.filter(t=>t.active&&!t.done).sort((a,b)=>scoreTask(b)-scoreTask(a));
@@ -932,7 +932,7 @@ function cmdStuck(){
     showSass('<div style="text-align:center;padding:20px;color:var(--text-3)">😵 Finding your way in...</div>');
     callClaude('I\'m stuck and can\'t start. Give me ONE tiny 5-minute action to break through. No thinking required. Tell me exactly what to open, click, or type. Be specific to my actual work.','Unstick mode. Give a single micro-action. Reference specific tools, people, or files from the brain context.').then(resp=>{
       showSass('<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">😵 Your 5-minute starter:</div><div style="font-size:13px;line-height:1.7;white-space:pre-wrap">'+esc(resp)+'</div>');
-    });
+    }).catch(e=>{showSass('<div style="color:var(--red);font-size:13px"><b>API Error:</b> '+e.message+'<br><br>Check your 🔑 API key is correct and you have an internet connection.</div>')});
   } else {
     const active=STATE.tasks.filter(t=>t.active&&!t.done).sort((a,b)=>scoreTask(b)-scoreTask(a));
     if(!active.length){showSass('<div>Nothing active to be stuck on.</div>');return}
@@ -946,7 +946,7 @@ function cmdHonest(){
     showSass('<div style="text-align:center;padding:20px;color:var(--text-3)">🪞 Assessing...</div>');
     callClaude('Be brutally honest with me. What am I avoiding? What patterns are you seeing? What should I be embarrassed about? Reference specific tasks, rolled counts, and deadlines. Don\'t be nice.','Honesty mode. Maximum sass. Reference specific tasks by name, rolled counts, days waiting. Call out the pattern of starting and not finishing.').then(resp=>{
       showSass('<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">🪞 The truth:</div><div style="font-size:12px;line-height:1.7;white-space:pre-wrap">'+esc(resp)+'</div>');
-    });
+    }).catch(e=>{showSass('<div style="color:var(--red);font-size:13px"><b>API Error:</b> '+e.message+'<br><br>Check your 🔑 API key is correct and you have an internet connection.</div>')});
   } else {
     // Fallback local
     const rollers=STATE.tasks.filter(t=>(t.rolled||0)>=2&&!t.done);
@@ -962,7 +962,7 @@ function cmdForce(){
     showSass('<div style="text-align:center;padding:20px;color:var(--text-3)">⚡ Loading kick...</div>');
     callClaude('Force me to work. Right now. Tell me EXACTLY what to do in the next 60 seconds. Be aggressive. No options. One command. Go.','Force mode. Maximum urgency. Name the exact app to open, person to message, or file to edit. One sentence instruction.').then(resp=>{
       showSass('<div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:8px">⚡ STOP READING AND DO IT:</div><div style="font-size:16px;font-weight:700;color:var(--navy);line-height:1.5;white-space:pre-wrap">'+esc(resp)+'</div><div style="font-size:11px;color:var(--text-3);margin-top:10px">Close this. Do it. Now.</div>');
-    });
+    }).catch(e=>{showSass('<div style="color:var(--red);font-size:13px"><b>API Error:</b> '+e.message+'<br><br>Check your 🔑 API key is correct and you have an internet connection.</div>')});
   } else {
     const active=STATE.tasks.filter(t=>t.active&&!t.done).sort((a,b)=>scoreTask(b)-scoreTask(a));
     if(!active.length){showSass('<div style="font-size:14px">⚡ Nothing to force. Add tasks.</div>');return}
@@ -1561,7 +1561,7 @@ Rules:
 - Maximum 150 words.`;
 
   try{
-    if(!_apiKey)return'No API key set. Hit the 🔑 API button to add your Anthropic key.';
+    if(!_apiKey)return'⚠ No API key. Tap the 🔑 API button in the top bar, paste your Anthropic key from console.anthropic.com, and save it.';
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':_apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -1572,12 +1572,18 @@ Rules:
         messages:[{role:'user',content:userMsg}]
       })
     });
+    if(!resp.ok){
+      const errBody=await resp.text();
+      console.error('API HTTP error:',resp.status,errBody);
+      return'API error ('+resp.status+'): '+(resp.status===401?'Invalid API key. Check 🔑.':resp.status===429?'Rate limited. Wait a moment.':resp.status===403?'API key does not have permission. Check console.anthropic.com.':'Unknown error. Check console.')+' Details: '+errBody.substring(0,100);
+    }
     const data=await resp.json();
     if(data.content&&data.content[0])return data.content[0].text;
-    return'API response empty. Check connection.';
+    if(data.error)return'API error: '+data.error.message;
+    return'Empty response. Check API key and connection.'
   }catch(e){
     console.error('API error:',e);
-    return'API call failed: '+e.message+'. Check your connection.';
+    return'API call failed: '+e.message+'. Check your API key (🔑 button) and internet connection.';
   }
 }
 
